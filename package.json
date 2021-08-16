@@ -4,6 +4,7 @@
 	"publisher": "yanzh",
 	"description": "",
 	"version": "0.0.1",
+	"enableProposedApi": true,
 	"engines": {
 		"vscode": "^1.58.0"
 	},
@@ -13,7 +14,7 @@
 	"repository": {
 	},
 	"activationEvents": [
-		"onCommand:type-hierarchy-sample.helloWorld"
+		"*"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -30,7 +31,8 @@
 		"menus": {
 			"editor/context": [
 				{
-					"command": "type-hierarchy-sample.prepare"
+					"command": "type-hierarchy-sample.prepare",
+					"when": "editorHasTypeHierarchyProvider"
 				}
 			]
 		}
