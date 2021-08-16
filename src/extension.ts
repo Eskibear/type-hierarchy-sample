@@ -21,29 +21,79 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const selector = { scheme: 'file', language: 'plaintext' };
 	let typeh = vscode.languages.registerTypeHierarchyProvider? vscode.languages.registerTypeHierarchyProvider(selector, {
-		async prepareTypeHierarchy(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.TypeHierarchyItem[]>{
+		async prepareTypeHierarchy(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.TypeHierarchyItem[] | undefined>{
 			console.log("prepare");
-			const range = new vscode.Range(position.with(undefined, 0), position.with(undefined, 999));
-			const content = document.getText(range);
-			const results: vscode.TypeHierarchyItem[] = [
-				{
-					name: content,
-					kind: vscode.SymbolKind.Class,
-					uri: document.uri,
-					range: range,
-					selectionRange: range,
+			const lineRange = new vscode.Range(position.with(undefined, 0), position.with(position.line + 1, 0));
+			const content = document.getText(lineRange);
+			const words = content.trim().split(" ").filter(Boolean);
+			let offset = 0;
+			for (const word of words) {
+				offset = content.indexOf(word, offset);
+				if (offset <= position.character && position.character < offset + word.length) {
+					const range = new vscode.Range(position.with(undefined, offset), position.with(undefined, offset + word.length));
+					return [
+						{
+							name: word,
+							kind: vscode.SymbolKind.Class,
+							uri: document.uri,
+							range: range,
+							selectionRange: range,
+						}
+					];
 				}
-			];
-			return results;
+				offset += word.length;
+			}
+			return undefined;
 		},
 		async provideTypeHierarchySupertypes(item: vscode.TypeHierarchyItem, token: vscode.CancellationToken): Promise<vscode.TypeHierarchyItem[]> {
 			console.log("Supertypes", item);
-			return [item];
+			const document = await vscode.workspace.openTextDocument(item.uri);
+			const position = item.selectionRange.start;
+			const newLineNumber = position.line - 1;
+			if (newLineNumber < 0) return [];
 
+			const rangeOfTargetLine = new vscode.Range(position.with(newLineNumber, 0), position.with(newLineNumber + 1, 0));
+			const contentOfTargetLine = document.getText(rangeOfTargetLine);
+			const words = contentOfTargetLine.trim().split(" ").filter(Boolean);
+			let ret = [];
+			let offset = 0;
+			for (const word of words) {
+				offset = contentOfTargetLine.indexOf(word, offset);
+				const range = new vscode.Range(position.with(newLineNumber, offset), position.with(newLineNumber, offset + word.length));
+				ret.push({
+					name: word,
+					kind: vscode.SymbolKind.Class,
+					uri: item.uri,
+					range: range,
+					selectionRange: range
+				});
+				offset += word.length;
+			}
+			return ret;
 		},
 		async provideTypeHierarchySubtypes(item: vscode.TypeHierarchyItem, token: vscode.CancellationToken): Promise<vscode.TypeHierarchyItem[]>{
 			console.log("Subtypes", item);
-			return [item];
+			const document = await vscode.workspace.openTextDocument(item.uri);
+			const position = item.selectionRange.start;
+			const newLineNumber = position.line + 1;
+			const rangeOfTargetLine = new vscode.Range(position.with(newLineNumber, 0), position.with(newLineNumber + 1, 0));
+			const contentOfTargetLine = document.getText(rangeOfTargetLine);
+			const words = contentOfTargetLine.trim().split(" ").filter(Boolean);
+			let ret = [];
+			let offset = 0;
+			for (const word of words) {
+				offset = contentOfTargetLine.indexOf(word, offset);
+				const range = new vscode.Range(position.with(newLineNumber, offset), position.with(newLineNumber, offset + word.length));
+				ret.push({
+					name: word,
+					kind: vscode.SymbolKind.Class,
+					uri: item.uri,
+					range: range,
+					selectionRange: range
+				});
+				offset += word.length;
+			}
+			return ret;
 		}
 	}) : new vscode.Disposable(() => {});
 

@@ -1,2 +1,5 @@
 # type-hierarchy-sample README
-test
+
+Peek Type Hierarchy demo:
+
+![peek-type-h](demo-peek.mp4) 
